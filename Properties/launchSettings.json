@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Ajeevi.IOT.RabbitMQListenerStateless": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
