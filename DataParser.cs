@@ -1,176 +1,140 @@
 ﻿using System;
-using System.Text;
+using InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Writes;
 
 namespace Ajeevi.IoT.RabbitMqListenerStateless
 {
     public class DataParser
     {
-        public string ParseDataPacket(string packet)
+        public PointData ParseDataPacketForInflux(string field)
         {
-            string returnMessage = string.Empty;
-            string[] packets = packet.Split(",");
-            if (packets[0].Equals("*@") && packets[1].Equals("1001"))
+            string[] fields = field.Split(',');
+            if (fields.Length != 12 && fields.Length != 16)
             {
-                returnMessage = ParsetemperaturesensorData(packet);
+                Console.WriteLine("Invalid field format.");
+                return null;
             }
-            else if (packets[0].Equals(">*") && packets[1].Equals("1005"))
-            {
-                returnMessage = ParseGPSv140Data(packet);
-            }
-            return returnMessage;
-        }
 
-        private string ParsetemperaturesensorData(string packet)
-        {
-            string parsedString = string.Empty;
-            StringBuilder sbResponse = new StringBuilder();
-            string[] packets;
             try
             {
-                packets = packet.Split(",");
-                sbResponse.Append("header:" + packets[0] + ",");
-                sbResponse.Append("devicetype:" + packets[1] + ",");
-                sbResponse.Append("imie:" + packets[2] + ",");
-                sbResponse.Append("datatype:" + packets[3] + ",");
-                sbResponse.Append("datasource:" + packets[4] + ",");
-                sbResponse.Append("packetserialnumber:" + packets[5] + ",");
-                sbResponse.Append("time:" + packets[6] + ",");
-                sbResponse.Append("date:" + packets[7] + ",");
-                sbResponse.Append("batteryvoltage:" + packets[8] + ",");
-                sbResponse.Append("signalstrength:" + packets[9] + ",");
-                sbResponse.Append("chargingindication:" + packets[10] + ",");
-                sbResponse.Append("temperatorealert:" + packets[11] + ",");
-                sbResponse.Append("temperature:" + packets[12] + ",");
-                sbResponse.Append("humidity:" + packets[13] + ",");
-                sbResponse.Append("endbyte:" + packets[14] + ",");
-                parsedString = sbResponse.ToString();
+                if (fields.Length == 12 && fields[0].Equals(">*") && fields[1].Equals("1005"))
+                {
+                    return ParseTemperatureSensorDataForInflux(fields);
+                }
+                else if (fields.Length == 16 && fields[0].Equals(">*") && fields[1].Equals("1005"))
+                {
+                    return ParseGPSv140DataForInflux(fields);
+                }
+                else
+                {
+                    Console.WriteLine("Unknown fields type or invalid length.");
+                    return null;
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error Parsing {0} ", ex.ToString());
-                parsedString = "Invalid Data";
+                Console.WriteLine($"Error parsing data: {ex}");
+                return null;
             }
-
-            return parsedString;
         }
 
-        private string ParseGPSv140Data(string packet)
+        private PointData ParseTemperatureSensorDataForInflux(string[] fields)
         {
-            string parsedString = string.Empty;
-            StringBuilder sbResponse = new StringBuilder();
-            string[] packets;
             try
             {
-                packets = packet.Split(",");
-                sbResponse.Append("header:" + packets[0] + ",");
-                sbResponse.Append("devicetype:" + packets[1] + ",");
-                sbResponse.Append("imie:" + packets[2] + ",");
-                sbResponse.Append("datatype:" + packets[3] + ",");
-                sbResponse.Append("time:" + packets[4] + ",");
-                sbResponse.Append("date:" + packets[5] + ",");
-                sbResponse.Append("sensorstate:" + packets[6] + ",");
-                sbResponse.Append("temperature:" + packets[7] + ",");
-                sbResponse.Append("gpsvalidation:" + packets[8] + ",");
-                sbResponse.Append("latitude:" + packets[9] + ",");
-                sbResponse.Append("longitude:" + packets[10] + ",");
-                sbResponse.Append("groundspeed:" + packets[11] + ",");
-                sbResponse.Append("gpselevation:" + packets[12] + ",");
-                sbResponse.Append("batteryvoltage:" + packets[13] + ",");
-                sbResponse.Append("reservebyte2:" + packets[14] + ",");
-                sbResponse.Append("endbyte:" + packets[15] + ",");
-                parsedString = sbResponse.ToString();
+                if (fields.Length != 12)
+                {
+                    throw new ArgumentException("Invalid number of fields for temperature sensor data.");
+                }
+                //EX: > *,1005,2,1,152041,07072022,101,38.87,1,28.321245,22.878765,#\r\n
+                var header = fields[0];
+                var deviceType = fields[1];
+                var packetType = fields[2];
+                var dataType = fields[3];
+                var timestamp = fields[4];
+                var date = fields[5];
+                var sensorState = fields[6];
+                var temperature = Convert.ToDouble(fields[7]);
+                var gpsValidation = fields[8];
+                var latitude = Convert.ToDouble(fields[9]);
+                var longitude = Convert.ToDouble(fields[10]);
+                var endByte = fields[11];
+
+                // Create the point data
+                return PointData.Measurement("iotdata")
+                    .Tag("Header", header)
+                    .Tag("Device_Type", deviceType)
+                    .Tag("Packet_Type", packetType)
+                    .Tag("Data_Type", dataType)
+                    .Tag("timestamp", timestamp)
+                    .Tag("date", date)
+                    .Tag("Sensor_State", sensorState)
+                    .Field("temperature", temperature)
+                    .Field("GPS_Validation", gpsValidation)
+                    .Field("Latitude", latitude)
+                    .Field("Longitude", longitude)
+                    .Field("End_Byte", endByte)
+                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error Parsing {0} ", ex.ToString());
-                parsedString = "Invalid Data";
+                Console.WriteLine($"Error parsing temperature sensor data: {ex}");
+                return null;
             }
-
-            return parsedString;
         }
 
-        public string ParseDataPacketForSQL(string packet)
+        private PointData ParseGPSv140DataForInflux(string[] fields)
         {
-            string returnMessage = string.Empty;
-            string[] packets = packet.Split(",");
-            if (packets[0].Equals("*@") && packets[1].Equals("1001"))
-            {
-                returnMessage = ParsetemperaturesensorDataSQL(packet);
-            }
-            else if (packets[0].Equals(">*") && packets[1].Equals("1005"))
-            {
-                returnMessage = ParseGPSv140DataSQL(packet);
-            }
-            return returnMessage;
-        }
-
-        private string ParsetemperaturesensorDataSQL(string packet)
-        {
-            StringBuilder sbResponse = new StringBuilder();
-            string[] packets;
             try
             {
-                packets = packet.Split(",");
-                sbResponse.Append("insert into `ajeeviiot`.`iotdata`(`temperature`,`imie`,`devicetype`,");
-                sbResponse.Append("`ischarging`,`batteryvoltage`,`humidity`,`signalstrength`,`lastreportingtime`,");
-                sbResponse.Append("`receiveddatapacket`,`header`,`datatype`,`datapacketsrnum`,`datasource`,`time`,`date`,`temperaturealert`)");
-                sbResponse.Append("VALUES(");
-                sbResponse.Append("'"); sbResponse.Append(packets[12]); sbResponse.Append("'"); sbResponse.Append(",");//temperature
-                sbResponse.Append("'"); sbResponse.Append(packets[2]); sbResponse.Append("'"); sbResponse.Append(",");//imie
-                sbResponse.Append("'"); sbResponse.Append(packets[1]); sbResponse.Append("'"); sbResponse.Append(",");//devicetype
-                sbResponse.Append("'"); sbResponse.Append(packets[10]); sbResponse.Append("'"); sbResponse.Append(",");//chargingindication
-                sbResponse.Append("'"); sbResponse.Append(packets[8]); sbResponse.Append("'"); sbResponse.Append(",");//battery voltage
-                sbResponse.Append("'"); sbResponse.Append(packets[13]); sbResponse.Append("'"); sbResponse.Append(",");//humidity
-                sbResponse.Append("'"); sbResponse.Append(packets[9]); sbResponse.Append("'"); sbResponse.Append(",");//signalstrength
-                sbResponse.Append("'"); sbResponse.Append(DateTime.Now.ToString("yyyy-MM-dd H:mm:ss")); sbResponse.Append("'"); sbResponse.Append(",");//lastreportingtime
-                sbResponse.Append("'"); sbResponse.Append(packet); sbResponse.Append("'"); sbResponse.Append(",");//receiveddatapacket
-                sbResponse.Append("'"); sbResponse.Append(packets[0]); sbResponse.Append("'"); sbResponse.Append(",");//header
-                sbResponse.Append("'"); sbResponse.Append(packets[3]); sbResponse.Append("'"); sbResponse.Append(",");//datatype
-                sbResponse.Append("'"); sbResponse.Append(packets[5]); sbResponse.Append("'"); sbResponse.Append(",");//datapacketsrnum
-                sbResponse.Append("'"); sbResponse.Append(packets[4]); sbResponse.Append("'"); sbResponse.Append(",");//datasource
-                sbResponse.Append("'"); sbResponse.Append(packets[6]); sbResponse.Append("'"); sbResponse.Append(",");//time
-                sbResponse.Append("'"); sbResponse.Append(packets[7]); sbResponse.Append("'"); sbResponse.Append(",");//date
-                sbResponse.Append("'"); sbResponse.Append(packets[11]); sbResponse.Append("'");//temperaturealert
-                sbResponse.Append(")");
-                return sbResponse.ToString();
+                if (fields.Length != 16)
+                {
+                    throw new ArgumentException("Invalid number of fields for GPS data.");
+                }
+           // EX: > *,1005,860906047220709,1,152041,07072022,101,38.87,1,28.321245,22.878765,0.214,221.5,3.7,0,#\r\n
+                var header = fields[0];
+                var deviceType = fields[1];
+                var imie = fields[2];
+                var dataType = fields[3];
+                var timestamp = fields[4];
+                var date = fields[5];
+                var sensorState = fields[6];
+                var temperature = Convert.ToDouble(fields[7]);
+                var gpsValidation = fields[8];
+                var latitude = Convert.ToDouble(fields[9]);
+                var longitude = Convert.ToDouble(fields[10]);
+                var groundSpeed = Convert.ToDouble(fields[11]);
+                var gpsElevation = Convert.ToDouble(fields[12]);
+                var batteryVoltage = Convert.ToDouble(fields[13]);
+                var reserveByte2 = fields[14];
+                var endByte = fields[15];
+
+                // Create the point data
+                return PointData.Measurement("iotdata")
+                    .Tag("Header", header)
+                    .Tag("Device_Type", deviceType)
+                    .Tag("imie", imie)
+                    .Tag("Data_Type", dataType)
+                    .Tag("timestamp", timestamp)
+                    .Tag("date", date)
+                    .Field("Sensor_State", sensorState)
+                    .Field("temperature", temperature)
+                    .Field("gpsValidation", gpsValidation)
+                    .Field("Latitude", latitude)
+                    .Field("Longitude", longitude)
+                    .Field("groundSpeed", groundSpeed)
+                    .Field("gpsElevation", gpsElevation)
+                    .Field("batteryVoltage", batteryVoltage)
+                    .Field("reserveByte2", reserveByte2)
+                    .Field("endByte", endByte)
+                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error Parsing {0} ", ex.ToString());
-                return "Invalid Data";
-            }
-        }
-
-        private string ParseGPSv140DataSQL(string packet)
-        {
-            StringBuilder sbResponse = new StringBuilder();
-            string[] packets;
-            try
-            {
-                packets = packet.Split(",");
-                sbResponse.Append("header:" + packets[0] + ",");
-                sbResponse.Append("devicetype:" + packets[1] + ",");
-                sbResponse.Append("imie:" + packets[2] + ",");
-                sbResponse.Append("datatype:" + packets[3] + ",");
-                sbResponse.Append("time:" + packets[4] + ",");
-                sbResponse.Append("date:" + packets[5] + ",");
-                sbResponse.Append("sensorstate:" + packets[6] + ",");
-                sbResponse.Append("temperature:" + packets[7] + ",");
-                sbResponse.Append("gpsvalidation:" + packets[8] + ",");
-                sbResponse.Append("latitude:" + packets[9] + ",");
-                sbResponse.Append("longitude:" + packets[10] + ",");
-                sbResponse.Append("groundspeed:" + packets[11] + ",");
-                sbResponse.Append("gpselevation:" + packets[12] + ",");
-                sbResponse.Append("batteryvoltage:" + packets[13] + ",");
-                sbResponse.Append("reservebyte2:" + packets[14] + ",");
-                sbResponse.Append("endbyte:" + packets[15] + ",");
-                return sbResponse.ToString();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error Parsing {0} ", ex.ToString());
-                return "Invalid Data";
+                Console.WriteLine($"Error parsing GPS data: {ex}");
+                return null;
             }
         }
     }
 }
+

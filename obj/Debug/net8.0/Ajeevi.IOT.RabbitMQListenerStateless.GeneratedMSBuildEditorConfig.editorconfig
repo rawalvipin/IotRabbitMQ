@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = Ajeevi.IOT.RabbitMQListenerStateless
-build_property.ProjectDir = C:\Users\Dell\Desktop\IOTRabbitmqliste\IOTRABBIT\Ajeevi.IOT.RabbitMQListenerStateless-master\
+build_property.ProjectDir = C:\Users\Dell\Desktop\Updated Project\Ajeevi.IOT.RabbitMQListenerStateless-master\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
