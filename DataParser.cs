@@ -44,7 +44,7 @@ namespace Ajeevi.IoT.RabbitMqListenerStateless
             {
                 if (fields.Length != 12)
                 {
-                    throw new ArgumentException("Invalid number of fields for temperature sensor data.");
+                    throw new ArgumentException("Invalid number of fields for temperature sensor data");
                 }
                 //EX: > *,1005,2,1,152041,07072022,101,38.87,1,28.321245,22.878765,#\r\n
                 var header = fields[0];

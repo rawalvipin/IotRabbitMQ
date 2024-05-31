@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ajeevi.IOT.RabbitMQListenerStateless")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f27a8942c0989f852f33184480829d2f53b18e95")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ajeevi.IOT.RabbitMQListenerStateless")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ajeevi.IOT.RabbitMQListenerStateless")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
