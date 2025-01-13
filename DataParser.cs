@@ -4,7 +4,7 @@ using InfluxDB.Client.Writes;
 
 namespace Ajeevi.IoT.RabbitMqListenerStateless
 {
-    public class DataParser12334444
+    public class DataParser
     {
         public PointData ParseDataPacketForInflux(string field)
         {
