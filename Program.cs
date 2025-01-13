@@ -26,7 +26,7 @@ using Ajeevi.IoT.RabbitMqListenerStateless;
                                  durable: true,
                                  exclusive: false,
                                  autoDelete: false,
-                                 arguments: null);;
+                                 arguments: null);
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += async (model, ea) =>
